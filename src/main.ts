@@ -99,15 +99,18 @@ class loomToolbarRenderChild extends MarkdownRenderChild {
 }
 
 class loomToolbarWidget extends WidgetType {
+  private readonly isRunning: boolean;
+
   constructor(
     private readonly plugin: loomPlugin,
     private readonly block: loomCodeBlock,
   ) {
     super();
+    this.isRunning = plugin.isBlockRunning(block.id);
   }
 
   eq(other: loomToolbarWidget): boolean {
-    return other.block.id === this.block.id && other.plugin.isBlockRunning(this.block.id) === this.plugin.isBlockRunning(this.block.id);
+    return other.block.id === this.block.id && other.isRunning === this.isRunning;
   }
 
   toDOM(): HTMLElement {
