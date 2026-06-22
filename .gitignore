@@ -1,0 +1,12 @@
+# Ignore local Obsidian workspace states
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# Ignore node_modules
+node_modules/
+
+# Ignore the compiled plugin files
+.obsidian/plugins/loom/*
+
+# Except the container group configurations
+!.obsidian/plugins/loom/containers/

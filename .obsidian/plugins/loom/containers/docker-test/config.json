@@ -1,0 +1,22 @@
+{
+  "runtime": "docker",
+  "languages": {
+    "python": { "useDefault": true },
+    "javascript": { "useDefault": true },
+    "typescript": { "useDefault": true },
+    "shell": { "useDefault": true },
+    "ruby": { "useDefault": true },
+    "perl": { "useDefault": true },
+    "lua": { "useDefault": true },
+    "php": { "useDefault": true },
+    "go": { "useDefault": true },
+    "haskell": { "useDefault": true },
+    "ocaml": { "useDefault": true },
+    "c": { "useDefault": true },
+    "cpp": { "useDefault": true },
+    "rust": { "useDefault": true },
+    "java": { "useDefault": true },
+    "llvm-ir": { "useDefault": true },
+    "lean": { "useDefault": true }
+  }
+}
