@@ -151,7 +151,8 @@ export default class loomPlugin extends Plugin {
     new ProofRunner(),
     new CustomLanguageRunner(),
   ]);
-  private readonly containerRunner = new loomContainerRunner(this.app, this.manifest.dir ?? ".obsidian/plugins/loom");
+  // Exposed as public and readonly so the settings panel and modals can access container configurations and default language mapping helpers.
+  public readonly containerRunner = new loomContainerRunner(this.app, this.manifest.dir ?? ".obsidian/plugins/loom");
   private readonly registeredCodeBlockAliases = new Set<string>();
   private readonly outputs = new Map<string, loomStoredOutput>();
   private readonly running = new Map<string, AbortController>();

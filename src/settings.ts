@@ -341,7 +341,7 @@ export class loomSettingTab extends PluginSettingTab {
           .addButton((button) =>
             button.setButtonText("Edit").onClick(() => {
               const pluginDir = this.loomPlugin.manifest.dir ?? ".obsidian/plugins/loom";
-              new EditContainerGroupModal(this.app, group.name, pluginDir, () => {
+              new EditContainerGroupModal(this.loomPlugin, group.name, pluginDir, () => {
                 this.display();
               }).open();
             }),
@@ -440,12 +440,12 @@ class EditContainerGroupModal extends Modal {
   private tabContentEl!: HTMLElement;
 
   constructor(
-    app: App,
+    private readonly loomPlugin: loomPlugin,
     private readonly groupName: string,
     private readonly pluginDir: string,
     private readonly onSave: () => void
   ) {
-    super(app);
+    super(loomPlugin.app);
   }
 
   async onOpen() {
@@ -674,7 +674,7 @@ class EditContainerGroupModal extends Modal {
     }
 
     const langsListEl = containerEl.createDiv({ cls: "loom-languages-list" });
-    const languages = Object.entries(this.configObj.languages as Record<string, { command: string; extension: string }>);
+    const languages = Object.entries(this.configObj.languages as Record<string, { command?: string; extension?: string; useDefault?: boolean }>);
 
     if (languages.length === 0) {
       langsListEl.createEl("p", { text: "No languages configured for this group.", cls: "setting-item-description" });
@@ -683,12 +683,38 @@ class EditContainerGroupModal extends Modal {
         const card = langsListEl.createDiv({ cls: "loom-language-card" });
         card.createEl("strong", { text: langName, attr: { style: "display: block; margin-bottom: 0.5rem; font-size: 1.1em;" } });
 
+        const isDefault = (langConfig as any).useDefault === true;
+
+        new Setting(card)
+          .setName("Use default configuration")
+          .setDesc("If checked, Loom will run this language using its built-in commands/extensions.")
+          .addToggle((toggle) => {
+            toggle
+              .setValue(isDefault)
+              .onChange((val) => {
+                if (val) {
+                  (langConfig as any).useDefault = true;
+                  delete langConfig.command;
+                  delete langConfig.extension;
+                } else {
+                  delete (langConfig as any).useDefault;
+                  const defaults = this.loomPlugin.containerRunner.getDefaultLanguageConfig(langName, this.loomPlugin.settings);
+                  langConfig.command = defaults?.command || "";
+                  langConfig.extension = defaults?.extension || "";
+                }
+                this.renderActiveTab();
+              });
+          });
+
         new Setting(card)
           .setName("Command")
           .setDesc("Execution command. Use {file} for the code snippet filename.")
           .addText((text) => {
+            const defaults = this.loomPlugin.containerRunner.getDefaultLanguageConfig(langName, this.loomPlugin.settings);
             text
+              .setPlaceholder(defaults?.command || "")
               .setValue(langConfig.command || "")
+              .setDisabled(isDefault)
               .onChange((val) => {
                 langConfig.command = val.trim();
               });
@@ -698,8 +724,11 @@ class EditContainerGroupModal extends Modal {
           .setName("Extension")
           .setDesc("Source file extension (e.g. .py, .js).")
           .addText((text) => {
+            const defaults = this.loomPlugin.containerRunner.getDefaultLanguageConfig(langName, this.loomPlugin.settings);
             text
+              .setPlaceholder(defaults?.extension || "")
               .setValue(langConfig.extension || "")
+              .setDisabled(isDefault)
               .onChange((val) => {
                 langConfig.extension = val.trim();
               });

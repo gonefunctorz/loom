@@ -11,17 +11,13 @@ const explicitDeployDirs = [
   path.resolve("../../.obsidian/plugins/loom"),
   "/mnt/c/Users/thomy/Obsidian notes/.obsidian/plugins/loom",
   "C:/Users/thomy/Obsidian notes/.obsidian/plugins/loom",
+  "/mnt/c/Users/thomy/Loom-Test-Vault/.obsidian/plugins/loom",
+  "C:/Users/thomy/Loom-Test-Vault/.obsidian/plugins/loom",
   ...(process.env.LOOM_PLUGIN_DIRS ?? "")
     .split(path.delimiter)
     .map((value) => value.trim())
     .filter(Boolean)
-].filter((dir) => {
-  try {
-    return dir.includes(".obsidian") && (dir.startsWith("/") ? fs.existsSync(path.dirname(dir)) : true);
-  } catch {
-    return false;
-  }
-});
+];
 
 await esbuild.build({
   entryPoints: ["src/main.ts"],

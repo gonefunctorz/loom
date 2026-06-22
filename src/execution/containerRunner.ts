@@ -10,8 +10,9 @@ import type { loomCodeBlock, loomPluginSettings, loomRunContext, loomRunResult }
 type loomContainerRuntime = "docker" | "podman" | "qemu" | "wsl" | "custom";
 
 interface loomContainerLanguageConfig {
-  command: string;
-  extension: string;
+  command?: string;
+  extension?: string;
+  useDefault?: boolean;
 }
 
 interface loomCommandExpectation {
@@ -159,8 +160,23 @@ export class loomContainerRunner {
   async run(block: loomCodeBlock, context: loomRunContext, settings: loomPluginSettings, groupName: string): Promise<loomRunResult> {
     const groupPath = this.resolveGroupPath(groupName);
     const config = await this.readConfig(groupPath);
-    const language = config.languages[block.language] ?? config.languages[block.languageAlias];
-    if (!language) {
+    const configLang = config.languages[block.language] ?? config.languages[block.languageAlias];
+
+    let isFallback = false;
+    let language: loomContainerLanguageConfig | null = null;
+
+    if (configLang) {
+      if (configLang.useDefault) {
+        language = this.getDefaultLanguageConfig(block.language, settings) ?? this.getDefaultLanguageConfig(block.languageAlias, settings);
+      } else {
+        language = configLang;
+      }
+    } else {
+      language = this.getDefaultLanguageConfig(block.language, settings) ?? this.getDefaultLanguageConfig(block.languageAlias, settings);
+      isFallback = true;
+    }
+
+    if (!language || !language.command || !language.extension) {
       throw new Error(`Container group ${groupName} has no command for ${block.language}.`);
     }
 
@@ -171,17 +187,30 @@ export class loomContainerRunner {
 
     try {
       await writeFile(tempFilePath, block.content, "utf8");
+      let result: loomRunResult;
       switch (config.runtime) {
         case "docker":
         case "podman":
-          return await this.runOciContainer(groupName, groupPath, config, language, tempFileName, context, settings);
+          result = await this.runOciContainer(groupName, groupPath, config, language, tempFileName, context, settings);
+          break;
         case "qemu":
-          return await this.runQemu(groupName, groupPath, config, language, tempFileName, context);
+          result = await this.runQemu(groupName, groupPath, config, language, tempFileName, context);
+          break;
         case "custom":
-          return await this.runCustom(groupName, groupPath, config, block, language, tempFileName, tempFilePath, context);
+          result = await this.runCustom(groupName, groupPath, config, block, language, tempFileName, tempFilePath, context);
+          break;
         case "wsl":
-          return await this.runWslContainer(groupName, groupPath, config, language, tempFileName, context);
+          result = await this.runWslContainer(groupName, groupPath, config, language, tempFileName, context);
+          break;
+        default:
+          throw new Error(`Unsupported runtime: ${config.runtime}`);
       }
+
+      if (isFallback) {
+        const fallbackMsg = `[Loom] Language '${block.language}' was not declared in container group. Running using default command: ${language.command}`;
+        result.warning = result.warning ? `${result.warning}\n${fallbackMsg}` : fallbackMsg;
+      }
+      return result;
     } finally {
       await rm(tempFilePath, { force: true });
     }
@@ -219,7 +248,7 @@ export class loomContainerRunner {
     settings: loomPluginSettings,
   ): Promise<loomRunResult> {
     const image = await this.resolveImage(groupName, groupPath, config, context, settings);
-    const command = splitCommandLine(language.command.replaceAll("{file}", tempFileName));
+    const command = splitCommandLine(language.command!.replaceAll("{file}", tempFileName));
     if (!command.length) {
       throw new Error("Container command is empty.");
     }
@@ -259,7 +288,7 @@ export class loomContainerRunner {
 
     try {
       const remoteFile = posixPath.join(qemu.remoteWorkspace, tempFileName);
-      const remoteCommand = language.command.replaceAll("{file}", shellQuote(remoteFile));
+      const remoteCommand = language.command!.replaceAll("{file}", shellQuote(remoteFile));
       if (!remoteCommand.trim()) {
         throw new Error("QEMU command is empty.");
       }
@@ -293,7 +322,7 @@ export class loomContainerRunner {
     tempFilePath: string,
     context: loomRunContext,
   ): Promise<loomRunResult> {
-    const command = language.command.replaceAll("{file}", tempFileName);
+    const command = language.command!.replaceAll("{file}", tempFileName);
     const result = await this.runCustomWrapper(
       groupName,
       groupPath,
@@ -341,7 +370,7 @@ export class loomContainerRunner {
     context: loomRunContext,
   ): Promise<loomRunResult> {
     const wslGroupPath = this.translateToWslPath(groupPath);
-    const command = language.command.replaceAll("{file}", tempFileName);
+    const command = language.command!.replaceAll("{file}", tempFileName);
     if (!command.trim()) {
       throw new Error("WSL command is empty.");
     }
@@ -474,13 +503,17 @@ export class loomContainerRunner {
       if (!value || typeof value !== "object" || Array.isArray(value)) {
         throw new Error(`Container language ${language} must be an object.`);
       }
-      const languageConfig = value as { command?: unknown; extension?: unknown };
-      if (typeof languageConfig.command !== "string" || !languageConfig.command.trim()) {
-        throw new Error(`Container language ${language} must define command.`);
+      const languageConfig = value as { command?: unknown; extension?: unknown; useDefault?: unknown };
+      const useDefault = languageConfig.useDefault === true;
+
+      if (!useDefault && (typeof languageConfig.command !== "string" || !languageConfig.command.trim())) {
+        throw new Error(`Container language ${language} must define command or useDefault.`);
       }
+
       languages[language] = {
-        command: languageConfig.command,
-        extension: typeof languageConfig.extension === "string" ? languageConfig.extension : `.${language}`,
+        command: typeof languageConfig.command === "string" ? languageConfig.command : undefined,
+        extension: typeof languageConfig.extension === "string" ? languageConfig.extension : undefined,
+        useDefault: useDefault || undefined,
       };
     }
 
@@ -963,6 +996,92 @@ export class loomContainerRunner {
 
   private imageNameForGroup(groupName: string): string {
     return `loom-container-${groupName.toLowerCase().replace(/[^a-z0-9_.-]/g, "-")}`;
+  }
+
+  public getDefaultLanguageConfig(langId: string, settings: loomPluginSettings): loomContainerLanguageConfig | null {
+    if (!langId) return null;
+    const normalized = langId.toLowerCase().trim();
+
+    // Check custom languages first
+    const custom = settings.customLanguages.find((c) => {
+      const names = [c.name, ...c.aliases.split(",").map((s) => s.trim())].map((n) => n.toLowerCase());
+      return names.includes(normalized);
+    });
+    if (custom) {
+      return {
+        command: `${custom.executable} ${custom.args}`.trim(),
+        extension: custom.extension || ".txt",
+      };
+    }
+
+    // Standard built-ins
+    switch (normalized) {
+      case "python":
+      case "py":
+        return {
+          command: `${settings.pythonExecutable.trim() || "python3"} {file}`,
+          extension: ".py",
+        };
+      case "javascript":
+      case "js":
+        return {
+          command: `${settings.nodeExecutable.trim() || "node"} {file}`,
+          extension: ".js",
+        };
+      case "typescript":
+      case "ts":
+        return {
+          command: `${settings.typescriptTranspilerExecutable.trim() || "ts-node"} {file}`,
+          extension: ".ts",
+        };
+      case "shell":
+      case "sh":
+      case "bash":
+        return {
+          command: `${settings.shellExecutable.trim() || "bash"} {file}`,
+          extension: ".sh",
+        };
+      case "ruby":
+      case "rb":
+        return {
+          command: `${settings.rubyExecutable.trim() || "ruby"} {file}`,
+          extension: ".rb",
+        };
+      case "perl":
+      case "pl":
+        return {
+          command: `${settings.perlExecutable.trim() || "perl"} {file}`,
+          extension: ".pl",
+        };
+      case "lua":
+        return {
+          command: `${settings.luaExecutable.trim() || "lua"} {file}`,
+          extension: ".lua",
+        };
+      case "php":
+        return {
+          command: `${settings.phpExecutable.trim() || "php"} {file}`,
+          extension: ".php",
+        };
+      case "go":
+        return {
+          command: `${settings.goExecutable.trim() || "go"} run {file}`,
+          extension: ".go",
+        };
+      case "haskell":
+      case "hs":
+        return {
+          command: `${settings.haskellExecutable.trim() || "runghc"} {file}`,
+          extension: ".hs",
+        };
+      case "ocaml":
+      case "ml":
+        return {
+          command: `${settings.ocamlExecutable.trim() || "ocaml"} {file}`,
+          extension: ".ml",
+        };
+    }
+    return null;
   }
 }
 
