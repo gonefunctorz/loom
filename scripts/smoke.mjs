@@ -70,7 +70,8 @@ await run(process.execPath, [
 console.log(`Smoke artifacts written to ${path.relative(rootDir, artifactDir)}`);
 
 async function run(command, commandArgs, options) {
-  const child = spawn(command, commandArgs, {
+  const actualCommand = process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
+  const child = spawn(actualCommand, commandArgs, {
     cwd: options.cwd,
     env: options.env ?? process.env,
     stdio: "inherit",
