@@ -146,6 +146,11 @@ Languages are grouped into vault level packages. A vault can enable only the pac
       <td>ops notes, scripting, research scratchpads</td>
     </tr>
     <tr>
+      <td>Obsidian Context</td>
+      <td>Obsidian JavaScript</td>
+      <td>vault and plugin integration snippets</td>
+    </tr>
+    <tr>
       <td>Native Compiled</td>
       <td>C, C++</td>
       <td>systems, exploit dev, native debugging</td>
@@ -179,6 +184,38 @@ Languages are grouped into vault level packages. A vault can enable only the pac
 </table>
 
 By default every built in package is enabled to preserve the old behavior. Use **Language Packages** in settings to make a vault specific profile, such as a server management vault with only Shell, Python, JavaScript, HTTP style custom tools, and no LLVM/proof clutter.
+
+## Obsidian context JavaScript
+
+Normal `javascript` and `js` fences still run through Node or the selected execution group. Use `obsidian-js` only when the snippet needs to run inside Obsidian itself.
+
+````markdown
+```obsidian-js
+console.log(app.workspace.getActiveFile()?.path ?? "no active file");
+console.log(file.path);
+new Notice("Ran inside Obsidian");
+```
+````
+
+Obsidian context blocks receive `app`, `plugin`, `file`, `block`, `Notice`, `console`, `note`, and `input`. They run in the Obsidian renderer process, can touch vault and workspace APIs, and are not sandboxed. By default every run emits this warning in the output panel:
+
+```text
+No but seriously, you are risking your life
+```
+
+Turn off **Show Obsidian context warning** in settings if the warning is too noisy.
+
+The `note` helper wraps common current-note mutations:
+
+```javascript
+await note.setFrontmatter("last-run", new Date().toISOString());
+await note.updateJsonBetween("<!-- state:start -->", "<!-- state:end -->", (state) => ({
+  ...state,
+  runs: Number(state.runs ?? 0) + 1
+}));
+```
+
+Timeouts can stop loom from waiting for async work, but they cannot safely interrupt a synchronous infinite loop once it has started in the Obsidian renderer.
 
 External language packs can live in the plugin directory under this path.
 

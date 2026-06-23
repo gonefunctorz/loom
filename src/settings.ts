@@ -116,6 +116,16 @@ export class loomSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName("Show Obsidian context warning")
+      .setDesc('Show "No but seriously, you are risking your life" when obsidian-js blocks run.')
+      .addToggle((toggle) =>
+        toggle.setValue(this.loomPlugin.settings.showObsidianContextWarning ?? true).onChange(async (value) => {
+          this.loomPlugin.settings.showObsidianContextWarning = value;
+          await this.loomPlugin.saveSettings();
+        }),
+      );
+
+    new Setting(containerEl)
       .setName("Extracted source preview")
       .setDesc("Choose how loom shows the materialized source for blocks that use loom-file.")
       .addDropdown((dropdown) =>

@@ -806,6 +806,7 @@ function isPrologueLine(line: string, language: loomNormalizedLanguage): boolean
     case "python":
       return /^(from\s+\S+\s+import\s+|import\s+)/.test(trimmed);
     case "javascript":
+    case "obsidian-js":
     case "typescript":
       return /^(import\s+|export\s+.*\s+from\s+|(?:const|let|var)\s+\w+\s*=\s*require\s*\()/.test(trimmed);
     case "c":
@@ -828,6 +829,7 @@ function collectDefinitions(lines: string[], language: loomNormalizedLanguage): 
     case "python":
       return collectPythonDefinitions(lines);
     case "javascript":
+    case "obsidian-js":
     case "typescript":
       return collectBraceDefinitions(lines, /^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\b|^(?:export\s+)?class\s+([A-Za-z_$][\w$]*)\b|^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/);
     case "c":

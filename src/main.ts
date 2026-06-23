@@ -20,6 +20,7 @@ import { findBlockAtLine, getSupportedLanguageAliases, parseMarkdownCodeBlocks }
 import { getLanguageCapability } from "./languageCapabilities";
 import { findEnabledCommandLanguage, normalizeLanguageConfiguration } from "./languagePackages";
 import { NodeRunner } from "./runners/node";
+import { ObsidianContextRunner } from "./runners/obsidianContext";
 import { CustomLanguageRunner } from "./runners/custom";
 import { InterpretedRunner } from "./runners/interpreted";
 import { EbpfRunner } from "./runners/ebpf";
@@ -171,6 +172,7 @@ export default class loomPlugin extends Plugin {
   readonly registry = new loomRunnerRegistry([
     new PythonRunner(),
     new NodeRunner(),
+    new ObsidianContextRunner({ app: this.app, plugin: this }),
     new OcamlRunner(),
     new NativeCompiledRunner(),
     new InterpretedRunner(),
@@ -882,6 +884,7 @@ export default class loomPlugin extends Plugin {
     normalizeLanguageConfiguration(this.settings);
     this.settings.outputVisibleLines = normalizeNonNegativeInteger(this.settings.outputVisibleLines, DEFAULT_SETTINGS.outputVisibleLines, 2000);
     this.settings.defaultTimeoutMs = normalizePositiveInteger(this.settings.defaultTimeoutMs, DEFAULT_SETTINGS.defaultTimeoutMs);
+    this.settings.showObsidianContextWarning = this.settings.showObsidianContextWarning ?? DEFAULT_SETTINGS.showObsidianContextWarning;
     this.settings.defaultContainerGroup = normalizeStringSetting(this.settings.defaultContainerGroup, DEFAULT_SETTINGS.defaultContainerGroup);
     this.settings.workingDirectory = normalizeStringSetting(this.settings.workingDirectory, DEFAULT_SETTINGS.workingDirectory);
   }

@@ -33,6 +33,14 @@ export const BUILT_IN_LANGUAGE_PACKAGES: loomLanguagePackage[] = [
     ],
   },
   {
+    id: "obsidian-context",
+    displayName: "Obsidian Context",
+    description: "Explicit opt-in JavaScript that runs inside Obsidian with access to the vault, workspace, and plugin context.",
+    languages: [
+      { id: "obsidian-js", displayName: "Obsidian JavaScript", aliases: ["obsidian-js", "obsidianjs", "obsidian-javascript"] },
+    ],
+  },
+  {
     id: "native-compiled",
     displayName: "Native Compiled",
     description: "Languages compiled into native binaries by local toolchains.",
@@ -80,7 +88,7 @@ export const BUILT_IN_LANGUAGE_PACKAGES: loomLanguagePackage[] = [
 ];
 
 export const CUSTOM_LANGUAGE_PACKAGE_ID = "custom";
-export const LANGUAGE_CONFIGURATION_VERSION = 2;
+export const LANGUAGE_CONFIGURATION_VERSION = 3;
 
 export function getDefaultLanguagePackIds(): string[] {
   return [...BUILT_IN_LANGUAGE_PACKAGES.map((pack) => pack.id), CUSTOM_LANGUAGE_PACKAGE_ID];
@@ -105,8 +113,11 @@ export function normalizeLanguageConfiguration(settings: loomPluginSettings): vo
   }
   if (settings.languageConfigurationVersion < 2) {
     enableLanguagePackage(settings, "ebpf");
-    settings.languageConfigurationVersion = LANGUAGE_CONFIGURATION_VERSION;
   }
+  if (settings.languageConfigurationVersion < 3) {
+    enableLanguagePackage(settings, "obsidian-context");
+  }
+  settings.languageConfigurationVersion = LANGUAGE_CONFIGURATION_VERSION;
 }
 
 function enableLanguagePackage(settings: loomPluginSettings, packageId: string): void {

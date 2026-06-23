@@ -39,6 +39,7 @@ function renderLanguageCallHarness(language: string, expression: string, print: 
     case "python":
       return `print(${expression})`;
     case "javascript":
+    case "obsidian-js":
     case "typescript":
       return `console.log(${expression});`;
     case "c":

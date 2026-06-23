@@ -23,6 +23,13 @@ const BUILT_IN_CAPABILITIES: Record<string, loomLanguageCapability> = {
     callHarness: "built-in",
     sourcePreview: true,
   },
+  "obsidian-js": {
+    language: "obsidian-js",
+    symbolExtraction: "top-level",
+    dependencyTracing: "top-level",
+    callHarness: "built-in",
+    sourcePreview: true,
+  },
   typescript: {
     language: "typescript",
     symbolExtraction: "top-level",
