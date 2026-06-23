@@ -70,12 +70,11 @@ await run(process.execPath, [
 console.log(`Smoke artifacts written to ${path.relative(rootDir, artifactDir)}`);
 
 async function run(command, commandArgs, options) {
-  const actualCommand = process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
-  const child = spawn(actualCommand, commandArgs, {
+  const child = spawn(command, commandArgs, {
     cwd: options.cwd,
     env: options.env ?? process.env,
     stdio: "inherit",
-    shell: false,
+    shell: process.platform === "win32",
   });
 
   const exitCode = await new Promise((resolve, reject) => {
