@@ -1,0 +1,9 @@
+{
+  "id": "loom",
+  "name": "loom",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Run normal fenced Markdown code blocks in Obsidian while keeping native syntax highlighting.",
+  "author": "big dog James",
+  "isDesktopOnly": true
+}

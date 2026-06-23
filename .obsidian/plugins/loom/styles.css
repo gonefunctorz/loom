@@ -1,0 +1,387 @@
+.loom-codeblock-shell {
+  position: relative;
+}
+
+.loom-code-toolbar {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  display: flex;
+  gap: 0.35rem;
+  z-index: 4;
+  padding: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 78%, transparent);
+  background: color-mix(in srgb, var(--background-primary) 88%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.loom-toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.loom-toolbar-button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.loom-toolbar-button.is-running svg,
+.loom-spinner {
+  animation: loom-spin 0.9s linear infinite;
+}
+
+.loom-inline-output-host {
+  margin-top: 0.65rem;
+}
+
+.loom-output-panel {
+  margin-top: 0.5rem;
+  border-radius: 14px;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-secondary) 92%, transparent);
+  overflow: hidden;
+}
+
+.loom-output-panel.is-hidden {
+  display: none;
+}
+
+.loom-output-panel.is-success {
+  border-color: color-mix(in srgb, var(--color-green) 40%, var(--background-modifier-border));
+}
+
+.loom-output-panel.is-warning {
+  border-color: color-mix(in srgb, var(--color-orange) 45%, var(--background-modifier-border));
+}
+
+.loom-output-panel.is-failure {
+  border-color: color-mix(in srgb, var(--color-red) 48%, var(--background-modifier-border));
+}
+
+.loom-output-panel.is-running {
+  border-style: dashed;
+}
+
+.loom-output-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.9rem;
+  background: color-mix(in srgb, var(--background-primary-alt) 65%, transparent);
+}
+
+.loom-output-badge,
+.loom-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--text-muted);
+}
+
+.loom-output-title {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.loom-output-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.loom-output-body {
+  padding: 0.8rem 0.9rem 0.95rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.loom-output-stream {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.loom-output-stream-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.loom-output-pre {
+  margin: 0;
+  padding: 0.75rem 0.8rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--background-primary) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 70%, transparent);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-monospace);
+  font-size: 0.87rem;
+  line-height: 1.45;
+}
+
+.loom-output-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.loom-source-preview {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.loom-source-preview-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.loom-source-preview-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.loom-source-preview-pre {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.loom-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.loom-settings-section {
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 0.35rem 0;
+}
+
+.loom-settings-section:last-child {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.loom-settings-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-normal);
+  padding: 0.65rem 0;
+}
+
+.loom-settings-summary:hover {
+  color: var(--text-accent);
+}
+
+.loom-settings-section-body {
+  padding: 0.1rem 0 0.6rem;
+}
+
+.loom-custom-language {
+  margin: 0.45rem 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+}
+
+.loom-custom-language > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.loom-language-package {
+  margin: 0.45rem 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+}
+
+.loom-language-package > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.loom-custom-language-body {
+  margin-top: 0.5rem;
+}
+
+.loom-llvm-code .loom-llvm-comment,
+.cm-line .loom-llvm-comment {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.loom-llvm-code .loom-llvm-string,
+.cm-line .loom-llvm-string {
+  color: var(--color-green);
+}
+
+.loom-llvm-code .loom-llvm-string-prefix,
+.loom-llvm-code .loom-llvm-type,
+.cm-line .loom-llvm-string-prefix,
+.cm-line .loom-llvm-type {
+  color: var(--color-cyan);
+}
+
+.loom-llvm-code .loom-llvm-keyword-control,
+.loom-llvm-code .loom-llvm-keyword-declaration,
+.loom-llvm-code .loom-llvm-keyword-memory,
+.loom-llvm-code .loom-llvm-keyword-arithmetic,
+.loom-llvm-code .loom-llvm-keyword-comparison,
+.loom-llvm-code .loom-llvm-keyword-cast,
+.loom-llvm-code .loom-llvm-keyword-other,
+.cm-line .loom-llvm-keyword-control,
+.cm-line .loom-llvm-keyword-declaration,
+.cm-line .loom-llvm-keyword-memory,
+.cm-line .loom-llvm-keyword-arithmetic,
+.cm-line .loom-llvm-keyword-comparison,
+.cm-line .loom-llvm-keyword-cast,
+.cm-line .loom-llvm-keyword-other {
+  color: var(--color-red);
+  font-weight: 600;
+}
+
+.loom-llvm-code .loom-llvm-keyword-modifier,
+.loom-llvm-code .loom-llvm-attribute,
+.loom-llvm-code .loom-llvm-attribute-group,
+.cm-line .loom-llvm-keyword-modifier,
+.cm-line .loom-llvm-attribute,
+.cm-line .loom-llvm-attribute-group {
+  color: var(--color-orange);
+}
+
+.loom-llvm-code .loom-llvm-global,
+.loom-llvm-code .loom-llvm-intrinsic,
+.cm-line .loom-llvm-global,
+.cm-line .loom-llvm-intrinsic {
+  color: var(--color-blue);
+}
+
+.loom-llvm-code .loom-llvm-local,
+.cm-line .loom-llvm-local {
+  color: var(--color-purple);
+}
+
+.loom-llvm-code .loom-llvm-label,
+.loom-llvm-code .loom-llvm-comdat,
+.loom-llvm-code .loom-llvm-metadata,
+.cm-line .loom-llvm-label,
+.cm-line .loom-llvm-comdat,
+.cm-line .loom-llvm-metadata {
+  color: var(--color-pink);
+}
+
+.loom-llvm-code .loom-llvm-number,
+.loom-llvm-code .loom-llvm-predicate,
+.cm-line .loom-llvm-number,
+.cm-line .loom-llvm-predicate {
+  color: var(--color-yellow);
+}
+
+.loom-llvm-code .loom-llvm-constant,
+.cm-line .loom-llvm-constant {
+  color: var(--color-accent);
+}
+
+.loom-llvm-code .loom-llvm-punctuation,
+.cm-line .loom-llvm-punctuation {
+  color: var(--text-muted);
+}
+
+@keyframes loom-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media print {
+  .loom-code-toolbar {
+    display: none !important;
+  }
+  .loom-output-panel {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .loom-print-hide-code {
+    display: none !important;
+  }
+  .loom-print-hide-output {
+    display: none !important;
+  }
+}
+
+/* Tabbed Interface for Container Group Editor */
+.loom-tab-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.loom-tab-header {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 0.5rem;
+  overflow-x: auto;
+}
+
+.loom-tab-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.loom-tab-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.loom-tab-btn.is-active {
+  background: var(--background-modifier-active-hover);
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.loom-tab-content {
+  min-height: 250px;
+}
+
+.loom-language-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: var(--background-primary-alt);
+}
