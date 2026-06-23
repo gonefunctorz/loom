@@ -12,6 +12,14 @@ print(40 + 2)
 echo loom-shell
 ```
 
+## Standard input
+
+```python loom-smoke-name=stdin-inline loom-smoke-profiles=minimal loom-stdin="alpha\nbeta" loom-smoke-stdout=alpha|beta
+import sys
+
+print("|".join(line.strip() for line in sys.stdin))
+```
+
 ## C
 
 ```c loom-smoke-name=c-native loom-smoke-profiles=systems loom-smoke-stdout=21
