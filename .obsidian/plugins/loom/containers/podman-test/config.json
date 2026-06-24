@@ -1,0 +1,11 @@
+{
+  "runtime": "podman",
+  "languages": {
+    "python": { "useDefault": true },
+    "shell": { "useDefault": true },
+    "c": { "useDefault": true },
+    "smtlib": { "useDefault": true },
+    "ebpf-c": { "useDefault": true },
+    "bpftrace": { "useDefault": true }
+  }
+}
