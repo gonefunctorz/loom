@@ -9,7 +9,9 @@ export interface loomLogInput {
   type: string;
   message?: string;
   notePath?: string;
+  noteHash?: string;
   block?: loomCodeBlock;
+  target?: loomLogTarget;
   data?: Record<string, unknown>;
   code?: string;
   stdin?: string;
@@ -19,15 +21,28 @@ export interface loomLogInput {
   error?: string;
 }
 
+export interface loomLogTarget {
+  runnerId?: string;
+  runnerName?: string;
+  containerGroup?: string;
+  workingDirectory?: string;
+  timeoutMs?: number;
+  source?: Record<string, unknown>;
+}
+
 interface loomLogEvent {
   version: 1;
   id: string;
   timestamp: string;
   type: string;
+  machineHash: string;
   message?: string;
   note?: {
+    name?: string;
+    nameHash?: string;
     path?: string;
     pathHash?: string;
+    contentHash?: string;
   };
   block?: {
     id: string;
@@ -36,6 +51,7 @@ interface loomLogEvent {
     alias: string;
     hash: string;
   };
+  target?: loomLogTarget;
   data?: Record<string, unknown>;
   code?: string;
   stdin?: string;
@@ -92,12 +108,14 @@ export class loomLogger {
     }
   }
 
-  async logRunFinished(filePath: string, block: loomCodeBlock, runnerName: string, result: loomRunResult, data: Record<string, unknown> = {}): Promise<void> {
+  async logRunFinished(filePath: string, block: loomCodeBlock, runnerName: string, result: loomRunResult, data: Record<string, unknown> = {}, target?: loomLogTarget, noteHash?: string): Promise<void> {
     await this.log({
       type: result.success ? "loom.run.finished" : "loom.run.failed",
       message: result.success ? "Code block finished" : "Code block failed",
       notePath: filePath,
+      noteHash,
       block,
+      target,
       data: {
         ...data,
         runnerId: result.runnerId,
@@ -130,14 +148,16 @@ export class loomLogger {
       id: createLogId(),
       timestamp: new Date().toISOString(),
       type: input.type,
+      machineHash: sha256Hash(settings.loggingMachineId),
       message: input.message,
       data: input.data,
       error: input.error,
     };
 
     if (input.notePath) {
-      event.note = this.formatNote(input.notePath, settings.loggingNotePathMode);
+      event.note = this.formatNote(input.notePath, settings.loggingNotePathMode, input.noteHash);
     }
+    event.target = input.target;
     if (input.block) {
       event.block = {
         id: input.block.id,
@@ -192,21 +212,25 @@ export class loomLogger {
       timestamp: trimmed.timestamp,
       type: trimmed.type,
       message: trimmed.message,
+      machineHash: trimmed.machineHash,
       note: trimmed.note,
       block: trimmed.block,
+      target: trimmed.target,
       truncated: true,
     });
   }
 
-  private formatNote(notePath: string, mode: loomPluginSettings["loggingNotePathMode"]): loomLogEvent["note"] {
+  private formatNote(notePath: string, mode: loomPluginSettings["loggingNotePathMode"], noteHash?: string): loomLogEvent["note"] {
     const pathHash = sha256Hash(notePath);
+    const noteName = notePath.split("/").pop() ?? notePath;
+    const nameHash = sha256Hash(noteName);
     if (mode === "omit") {
-      return { pathHash };
+      return { pathHash, nameHash, contentHash: noteHash };
     }
     if (mode === "plain") {
-      return { path: notePath, pathHash };
+      return { name: noteName, nameHash, path: notePath, pathHash, contentHash: noteHash };
     }
-    return { pathHash };
+    return { pathHash, nameHash, contentHash: noteHash };
   }
 
   private async appendVaultText(rawPath: string, content: string): Promise<void> {
@@ -317,12 +341,17 @@ export class loomLogger {
 
 function renderTextLogLine(event: loomLogEvent): string {
   const note = event.note?.path ? ` note=${event.note.path}` : event.note?.pathHash ? ` noteHash=${event.note.pathHash.slice(0, 16)}` : "";
+  const noteContent = event.note?.contentHash ? ` contentHash=${event.note.contentHash.slice(0, 16)}` : "";
   const block = event.block ? ` block=${event.block.ordinal}:${event.block.language}:${event.block.hash.slice(0, 12)}` : "";
+  const machine = ` machine=${event.machineHash.slice(0, 16)}`;
+  const target = event.target?.containerGroup
+    ? ` target=${event.target.containerGroup}`
+    : event.target?.runnerName ? ` target=${event.target.runnerName}` : "";
   const message = event.message ? ` ${event.message}` : "";
   const success = typeof event.data?.success === "boolean" ? ` success=${String(event.data.success)}` : "";
   const exit = event.data?.exitCode != null ? ` exit=${String(event.data.exitCode)}` : "";
   const duration = event.data?.durationMs != null ? ` durationMs=${String(event.data.durationMs)}` : "";
-  return `${event.timestamp} ${event.type}${note}${block}${success}${exit}${duration}${message}`;
+  return `${event.timestamp} ${event.type}${machine}${note}${noteContent}${block}${target}${success}${exit}${duration}${message}`;
 }
 
 function normalizeVaultLogPath(rawPath: string): string | null {

@@ -20,7 +20,7 @@ import { loomContainerRunner } from "./execution/containerRunner";
 import { isCompileContainerGroupAllowed, isCompileFeatureAllowed } from "./buildProfile";
 import { resolveExecutionContext as resolveLoomExecutionContext } from "./executionContext";
 import { addLlvmDecorations } from "./llvmHighlight";
-import { loomLogger, type loomLogInput } from "./logging";
+import { loomLogger, type loomLogInput, type loomLogTarget } from "./logging";
 import { findBlockAtLine, normalizeLanguage, parseMarkdownCodeBlocks } from "./parser";
 import { getLanguageCapability } from "./languageCapabilities";
 import { findEnabledCommandLanguage, normalizeLanguageConfiguration } from "./languagePackages";
@@ -650,12 +650,19 @@ export default class loomPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
+    const loadedData = await this.loadData();
+    const hadMachineId = typeof loadedData?.loggingMachineId === "string" && loadedData.loggingMachineId.trim().length > 0;
     this.settings = {
       ...DEFAULT_SETTINGS,
-      ...(await this.loadData()),
+      ...loadedData,
     };
     await this.loadExternalLanguagePacks();
     this.normalizeSettings();
+    if (!hadMachineId) {
+      const persistedSettings: Partial<loomPluginSettings> = { ...this.settings };
+      delete persistedSettings.externalLanguagePacks;
+      await this.saveData(persistedSettings);
+    }
   }
 
   async loadExternalLanguagePacks(showNotice = false): Promise<void> {
@@ -778,7 +785,30 @@ export default class loomPlugin extends Plugin {
   }
 
   private async logEvent(input: loomLogInput): Promise<void> {
-    await this.logger.log(input);
+    await this.logger.log(await this.enrichLogEvent(input));
+  }
+
+  private async enrichLogEvent(input: loomLogInput): Promise<loomLogInput> {
+    if (!input.notePath || input.noteHash) {
+      return input;
+    }
+
+    const noteHash = await this.readCurrentNoteHash(input.notePath);
+    return noteHash ? { ...input, noteHash } : input;
+  }
+
+  private async readCurrentNoteHash(notePath: string): Promise<string | undefined> {
+    const file = this.app.vault.getAbstractFileByPath(notePath);
+    if (!(file instanceof TFile)) {
+      return undefined;
+    }
+
+    try {
+      return sha256Hash(canonicalizeNoteForHash(await this.app.vault.cachedRead(file)));
+    } catch (error) {
+      console.warn("loom: failed to compute note hash for log event", error);
+      return undefined;
+    }
   }
 
   createToolbarElement(block: loomCodeBlock): HTMLElement {
@@ -1372,6 +1402,16 @@ export default class loomPlugin extends Plugin {
     const controller = new AbortController();
     const stdin = await this.resolveBlockStdin(file, block);
     const runnerName = containerGroup ? `execution group ${containerGroup}` : runner!.displayName;
+    const runnerId = containerGroup ? `container:${containerGroup}` : runner!.id;
+    const noteHash = await this.readCurrentNoteHash(file.path);
+    const logTarget: loomLogTarget = {
+      runnerId,
+      runnerName,
+      containerGroup,
+      workingDirectory: executionContext.workingDirectory,
+      timeoutMs: executionContext.timeoutMs,
+      source: executionContext.source,
+    };
     const runContext = {
       file,
       workingDirectory: executionContext.workingDirectory,
@@ -1386,7 +1426,9 @@ export default class loomPlugin extends Plugin {
       type: "loom.run.started",
       message: "Code block started",
       notePath: file.path,
+      noteHash,
       block,
+      target: logTarget,
       stdin,
       data: {
         runnerName,
@@ -1394,7 +1436,7 @@ export default class loomPlugin extends Plugin {
         workingDirectory: executionContext.workingDirectory,
         timeoutMs: executionContext.timeoutMs,
         stdinBytes: stdin?.length ?? 0,
-        executionSource: executionContext.source,
+        noteHash,
       },
     });
 
@@ -1440,7 +1482,8 @@ export default class loomPlugin extends Plugin {
         workingDirectory: executionContext.workingDirectory,
         timeoutMs: executionContext.timeoutMs,
         sourceReference: Boolean(block.sourceReference),
-      });
+        noteHash,
+      }, logTarget, await this.readCurrentNoteHash(file.path));
       new Notice(result.success ? `loom ran ${runnerName} block.` : `loom run failed for ${runnerName}.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1467,7 +1510,9 @@ export default class loomPlugin extends Plugin {
         type: "loom.run.failed",
         message: "Code block failed before result",
         notePath: file.path,
+        noteHash,
         block,
+        target: logTarget,
         stdin,
         error: message,
         data: {
@@ -1856,6 +1901,7 @@ export default class loomPlugin extends Plugin {
     this.settings.loggingIncludeCode = Boolean(this.settings.loggingIncludeCode);
     this.settings.loggingIncludeOutput = Boolean(this.settings.loggingIncludeOutput);
     this.settings.loggingIncludeInput = Boolean(this.settings.loggingIncludeInput);
+    this.settings.loggingMachineId = normalizeMachineId(this.settings.loggingMachineId);
     this.settings.loggingGlobalTextPath = normalizeStringSetting(this.settings.loggingGlobalTextPath, DEFAULT_SETTINGS.loggingGlobalTextPath);
     this.settings.loggingGlobalJsonlPath = normalizeStringSetting(this.settings.loggingGlobalJsonlPath, DEFAULT_SETTINGS.loggingGlobalJsonlPath);
     this.settings.loggingPerNoteTextPathPattern = normalizeStringSetting(this.settings.loggingPerNoteTextPathPattern, DEFAULT_SETTINGS.loggingPerNoteTextPathPattern);
@@ -2774,6 +2820,21 @@ function normalizeNonNegativeInteger(value: unknown, fallback: number, max: numb
 
 function normalizeStringSetting(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;
+}
+
+function normalizeMachineId(value: unknown): string {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^[A-Za-z0-9._:-]{16,160}$/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+  return createMachineId();
+}
+
+function createMachineId(): string {
+  const cryptoApi = globalThis.crypto as { randomUUID?: () => string } | undefined;
+  return cryptoApi?.randomUUID?.() ?? `loom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
 }
 
 function canonicalizeNoteForHash(source: string): string {

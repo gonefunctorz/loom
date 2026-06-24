@@ -174,6 +174,7 @@ export interface loomPluginSettings {
   loggingIncludeOutput: boolean;
   loggingIncludeInput: boolean;
   loggingMaxEventBytes: number;
+  loggingMachineId: string;
   defaultContainerGroup: string;
 }
 

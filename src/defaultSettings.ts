@@ -67,5 +67,6 @@ export const DEFAULT_SETTINGS: loomPluginSettings = {
   loggingIncludeOutput: false,
   loggingIncludeInput: false,
   loggingMaxEventBytes: 65536,
+  loggingMachineId: "",
   defaultContainerGroup: "",
 };

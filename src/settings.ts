@@ -11,6 +11,7 @@ import {
   isLightCompileMode,
 } from "./buildProfile";
 import { CUSTOM_LANGUAGE_PACKAGE_ID, getAvailableLanguagePackages, getDefaultLanguageIds, getDefaultLanguagePackIds, isLanguageEnabled, normalizeLanguageConfiguration } from "./languagePackages";
+import { sha256Hash } from "./utils/hash";
 import type { loomCustomLanguage, loomPluginSettings } from "./types";
 
 export { DEFAULT_SETTINGS } from "./defaultSettings";
@@ -207,6 +208,10 @@ export class loomSettingTab extends PluginSettingTab {
           await this.loomPlugin.saveSettings();
         }),
       );
+
+    new Setting(containerEl)
+      .setName("Machine hash")
+      .setDesc(`Stable machine/install identifier emitted in logs: ${sha256Hash(this.loomPlugin.settings.loggingMachineId).slice(0, 16)}`);
 
     new Setting(containerEl)
       .setName("Global text log")
