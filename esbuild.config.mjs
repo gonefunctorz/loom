@@ -46,6 +46,10 @@ await esbuild.build({
     "@codemirror/view",
     "@codemirror/language",
   ],
+  alias: {
+    "lie": "./stubs/lie.js",
+    "setimmediate": "./stubs/setimmediate.js",
+  },
   define: {
     __LOTUS_COMPILE_MODE__: JSON.stringify(compileMode),
     __LOTUS_LIGHT_LANGUAGES__: JSON.stringify(lightLanguages),
