@@ -1,4 +1,5 @@
-<video src="https://youtu.be/PzJ5QUtpxws" width="100%" controls></video>
+[![Lotus show and tell](https://img.youtube.com/vi/PzJ5QUtpxws/0.jpg)](https://www.youtube.com/watch?v=PzJ5QUtpxws)
+
 # lotus
 
 Obsidian plugin for executing ordinary fenced Markdown code blocks.
