@@ -52,7 +52,18 @@ import { splitCommandLine } from "./utils/command";
 import { sha256Hash } from "./utils/hash";
 import { formatTimeoutLabel, formatTimeoutMs } from "./utils/timeout";
 import { createOpenSshSignature, createPassphraseSignature, createRsaSignature, readSignatureRecord, verifyOpenSshSignature, verifyPassphraseSignature, verifyRsaSignature, type lotusSignatureRecord } from "./signing";
-import type { lotusCodeBlock, lotusCustomPreprocessor, lotusDisplayOutput, lotusExternalLanguage, lotusExternalLanguagePack, lotusPluginSettings, lotusResolvedExecutionContext, lotusStdinSession, lotusStoredOutput } from "./types";
+import type {
+  lotusCodeBlock,
+  lotusCustomPreprocessor,
+  lotusDisplayOutput,
+  lotusDisplayRenderer,
+  lotusExternalLanguage,
+  lotusExternalLanguagePack,
+  lotusPluginSettings,
+  lotusResolvedExecutionContext,
+  lotusStdinSession,
+  lotusStoredOutput,
+} from "./types";
 
 const lotusRefreshEffect = StateEffect.define<void>();
 const EXTERNAL_LANGUAGE_PACK_DIR = "language-packs";
@@ -541,6 +552,7 @@ export default class lotusPlugin extends Plugin {
   // Exposed as public and readonly so the settings panel and modals can access container configurations and default language mapping helpers.
   public readonly containerRunner = new lotusContainerRunner(this.app, this.manifest.dir ?? `${this.app.vault.configDir}/plugins/lotus`);
   private hasRegisteredMarkdownDecorator = false;
+  private readonly displayRenderers = new Set<lotusDisplayRenderer>();
   private readonly outputs = new Map<string, lotusStoredOutput>();
   private readonly liveRuns = new Map<string, lotusLiveRunState>();
   private cachedSigningPassphrase: string | null = null;
@@ -1060,7 +1072,6 @@ export default class lotusPlugin extends Plugin {
     });
     this.registerCodeBlockProcessors();
     this.notifyAllOutputsChanged();
-    this.refreshAllViews();
   }
 
   isBlockRunning(blockId: string): boolean {
@@ -1074,6 +1085,19 @@ export default class lotusPlugin extends Plugin {
     this.outputListeners.get(blockId)?.add(listener);
     return () => {
       this.outputListeners.get(blockId)?.delete(listener);
+    };
+  }
+
+  registerDisplayRenderer(renderer: lotusDisplayRenderer): () => void {
+    if (!isCompileFeatureAllowed("rich-displays")) {
+      return () => undefined;
+    }
+    this.validateDisplayRenderer(renderer);
+    this.displayRenderers.add(renderer);
+    this.notifyAllOutputsChanged();
+    return () => {
+      this.displayRenderers.delete(renderer);
+      this.notifyAllOutputsChanged();
     };
   }
 
@@ -1225,6 +1249,7 @@ export default class lotusPlugin extends Plugin {
 
     container.appendChild(createOutputPanel(output, {
       defaultVisibleLines: this.settings.outputVisibleLines ?? 0,
+      displayRenderers: [...this.displayRenderers],
     }));
   }
 
@@ -2880,6 +2905,19 @@ export default class lotusPlugin extends Plugin {
       for (const listener of listeners) {
         listener();
       }
+    }
+    this.refreshAllViews();
+  }
+
+  private validateDisplayRenderer(renderer: lotusDisplayRenderer): void {
+    if (!renderer || typeof renderer.render !== "function") {
+      throw new Error("Lotus display renderer must provide a render function.");
+    }
+    if (
+      !Array.isArray(renderer.mimeTypes)
+      || !renderer.mimeTypes.some((mime) => typeof mime === "string" && mime.trim())
+    ) {
+      throw new Error("Lotus display renderer must provide at least one MIME type.");
     }
   }
 
